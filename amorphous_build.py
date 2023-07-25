@@ -6,10 +6,41 @@ from pymatgen.core.composition import Composition
 from pymatgen.core.units import Length, Mass
 import random
 import os 
-
+import math
 # input : density, unit_cell information of POSCAR(is No POSCAR, input lattice vector) 
 # output : amorphous unit cell! 
 
+def distance(p1, p2):
+    # Calculate the distance between two points
+    # input : 3D vectors 
+    # output : distance 
+    x1, y1, z1 = p1
+    x2, y2, z2 = p2
+   
+    a1 = min(abs(x1 - x2), 1 - abs(x1 - x2))
+    a2 = min(abs(y1 - y2), 1 - abs(y1 - y2))
+    a3 = min(abs(z1 - z2), 1 - abs(z1 - z2))
+
+    return math.sqrt(a1 ** 2 + a2 ** 2 + a3 ** 2)
+
+def generate_positions(num_particles, min_distance):
+    # Generate structure with particles maintaining minimum distance 
+    # use direct method, return cartesian coordinates  
+    particles = []
+    while len(particles) < num_particles: # for all particles 
+        x1 = random.uniform(0, 1)
+        x2 = random.uniform(0, 1)
+        x3 = random.uniform(0, 1)
+        
+        dp = [x1,x2,x3]
+
+        if all(distance(dp, p) >= min_distance for p in particles):
+            # get each distance  
+            particles.append(dp)
+    return particles
+
+
+iter_num = int(input("Number of structure to create: ")) 
 t_formula = input("input Formula : ") 
 density = float(input("input Density : ")) 
 
@@ -60,13 +91,20 @@ for key, value in b.items():
     for i in range(a * int(value)):
         species_list.append(key)
 
-# get random lattice coordinate 
-coord_list = []
-for i in range(len(species_list)): 
-    v = [random.random() for _ in range(3)]
-    coord_list.append(v)
+# min_distance 
+min_distance = 0.15
 
+current_dir = os.getcwd() 
+for i in range(iter_num):
+    directory_name = f"{i}_a"
+    dir_path = os.path.join(current_dir, directory_name) 
+    os.makedirs(dir_path) 
+    coord_list = generate_positions(len(species_list), min_distance)
+    os.chdir(dir_path)
+    unit_cell = Structure(species=species_list, lattice=lattice_vectors, coords=coord_list)
+    unit_cell.to(filename="POSCAR", fmt="poscar")
+    os.chdir(current_dir) 
+# Print the coordinates of the particles
 
-unit_cell = Structure(species=species_list, lattice=lattice_vectors, coords=coord_list)
-unit_cell.to(filename="Amorphous.vasp", fmt="poscar")
+print("COMPLETE!!")
 
